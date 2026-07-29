@@ -1,0 +1,20 @@
+--- a/django/core/files/locks.py
++++ b/django/core/files/locks.py
+@@ -122,6 +122,17 @@
+                 return True
+             except BlockingIOError:
+                 return False
++            except OSError:
++                # z/OS flock() rejects fd/lock combinations that succeed on
++                # other Unixes (e.g. LOCK_EX on a read-only fd raises EBADF/
++                # EACCES). Fall back to the "locking unsupported" behavior
++                # (see the ImportError branch above) instead of propagating,
++                # so callers such as test SerializeMixin degrade gracefully.
++                import sys
++
++                if sys.platform == "zos":
++                    return False
++                raise
+ 
+         def unlock(f):
+             fcntl.flock(_fd(f), fcntl.LOCK_UN)

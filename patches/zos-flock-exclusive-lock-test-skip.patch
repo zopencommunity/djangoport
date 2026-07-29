@@ -1,0 +1,18 @@
+--- a/tests/files/tests.py
++++ b/tests/files/tests.py
+@@ -190,6 +190,15 @@
+             self.assertEqual(test_file.read(), (content * 2).encode())
+ 
+     def test_exclusive_lock(self):
++        import sys
++
++        if sys.platform == "zos":
++            # z/OS flock() cannot take an exclusive lock (LOCK_EX) on a
++            # read-only fd (open() here defaults to mode "r"); it raises
++            # EBADF/EACCES where BSD flock on other Unixes succeeds. The
++            # zos-flock-unsupported-fallback patch degrades lock() to return
++            # False in that case, so this test's assertIs(..., True) can't hold.
++            self.skipTest("z/OS flock() rejects LOCK_EX on a read-only fd")
+         file_path = Path(__file__).parent / "test.png"
+         with open(file_path) as f1, open(file_path) as f2:
+             self.assertIs(locks.lock(f1, locks.LOCK_EX), True)

@@ -1,0 +1,4 @@
+# Pipeline runtime artifacts — may contain env-specific connection metadata.
+patches/logs/
+logs/
+*.jsonl

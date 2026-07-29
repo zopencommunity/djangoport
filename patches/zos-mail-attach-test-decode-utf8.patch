@@ -1,0 +1,17 @@
+--- a/tests/mail/tests.py
++++ b/tests/mail/tests.py
+@@ -998,7 +998,13 @@
+                     expected_content = file_path.read_bytes()
+                     if expected_mimetype.startswith("text/"):
+                         try:
+-                            expected_content = expected_content.decode()
++                            # Decode as UTF-8 explicitly to mirror the
++                            # zos-ebcdic-decode-utf8 patch in message.py. On
++                            # IBM z/OS Python a bare bytes.decode() uses a
++                            # lenient single-byte codec that never raises, so
++                            # it would keep text/* for binary content and
++                            # disagree with Django's UTF-8 decode.
++                            expected_content = expected_content.decode("utf-8")
+                         except UnicodeDecodeError:
+                             expected_mimetype = "application/octet-stream"
+ 
