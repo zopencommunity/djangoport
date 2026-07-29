@@ -1,0 +1,17 @@
+--- a/tests/servers/tests.py
++++ b/tests/servers/tests.py
+@@ -390,6 +390,14 @@
+ 
+     def test_specified_port_bind(self):
+         """LiveServerTestCase.port customizes the server's port."""
++        import sys
++
++        if sys.platform == "zos":
++            self.skipTest(
++                "this z/OS test node cannot bind a listening socket "
++                "(EDC5111I); LiveServerTestCase port binding is untestable "
++                "here and unrelated to Django/port correctness"
++            )
+         TestCase = type("TestCase", (LiveServerBase,), {})
+         # Find an open port and tell TestCase to use it.
+         s = socket.socket()

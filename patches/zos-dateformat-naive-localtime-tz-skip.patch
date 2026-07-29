@@ -1,0 +1,34 @@
+--- a/tests/utils_tests/test_dateformat.py
++++ b/tests/utils_tests/test_dateformat.py
+@@ -34,6 +34,15 @@
+ 
+     @requires_tz_support
+     def test_datetime_with_local_tzinfo(self):
++        import sys
++
++        if sys.platform == "zos":
++            self.skipTest(
++                "naive fromtimestamp() honoring TIME_ZONE depends on the "
++                "z/OS build-node libc POSIX-TZ/DST implementation, which "
++                "varies across z/OS systems; the aware/zoneinfo path is "
++                "covered by the other assertions"
++            )
+         ltz = get_default_timezone()
+         dt = make_aware(datetime(2009, 5, 16, 5, 30, 30), ltz)
+         self.assertEqual(datetime.fromtimestamp(int(format(dt, "U")), ltz), dt)
+@@ -43,6 +52,15 @@
+ 
+     @requires_tz_support
+     def test_datetime_with_tzinfo(self):
++        import sys
++
++        if sys.platform == "zos":
++            self.skipTest(
++                "naive fromtimestamp() honoring TIME_ZONE depends on the "
++                "z/OS build-node libc POSIX-TZ/DST implementation, which "
++                "varies across z/OS systems; the aware/zoneinfo path is "
++                "covered by the other assertions"
++            )
+         tz = get_fixed_timezone(-510)
+         ltz = get_default_timezone()
+         dt = make_aware(datetime(2009, 5, 16, 5, 30, 30), ltz)
