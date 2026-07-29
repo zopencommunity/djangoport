@@ -1,0 +1,169 @@
+# bump: django-version /DJANGO_VERSION="(.*)"/ https://files.pythonhosted.org/packages/78/29/ac41e16097af67066d97a7d5775c5d8e7efc5d0284f6b0a159e07b9adb92/django-6.0.6.tar.gz|semver:*
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DJANGO="6.0.6"
+# DJANGO_VERSION="V.R.M"
+
+###
+### Build control file for the django port
+###
+
+###
+### Required Environment Variables
+###
+export ZOPEN_PROJECT_NAME="django"
+export ZOPEN_BUILD_LINE="STABLE"
+export ZOPEN_STABLE_URL="https://files.pythonhosted.org/packages/78/29/ac41e16097af67066d97a7d5775c5d8e7efc5d0284f6b0a159e07b9adb92/django-6.0.6.tar.gz"
+export ZOPEN_STABLE_DEPS="check_python grep"
+export ZOPEN_DEV_URL=""
+export ZOPEN_DEV_DEPS="check_python grep"
+export ZOPEN_CATEGORIES="networking development"
+export ZOPEN_RUNTIME_DEPS=""
+# export ZOPEN_SYSTEM_PREREQ="zos25" # optional system pre-req (default=zos25)
+
+
+###
+### Build settings (Port type: BUILD, Build system: Python)
+###
+### Settings for Python build system
+### Build, check, install, and env are handled natively by zopen-build
+export ZOPEN_BUILD_SYSTEM="Python"
+export ZOPEN_COMP="skip"
+
+
+###
+### Required user-supplied functions
+###
+
+# zopen_check_results is provided natively by zopen-build for Python
+
+zopen_get_version() {
+  echo "1.0.0" # Modify to echo the version of your tool/library
+}
+
+
+###
+### Custom Build Logic (if applicable)
+###
+
+
+###
+### Optional User-Supplied Hooks (uncomment to use)
+###
+
+#zopen_append_to_env() {
+#  ## This function runs as part of generation of the .env file. The output of the
+#  ## function is appended to .env.
+#}
+#
+#zopen_append_to_setup(){
+#  ## This function runs as part of generation of the setup.sh file. The output of
+#  ## the function is appended to setup.sh.
+#}
+#
+#zopen_append_to_validate_install(){
+#  ## This function runs as part of generation of the install_test.sh file. The
+#  ## output of the function is appended to install_test.sh script.
+#}
+#
+#zopen_install_caveats(){
+#  ## This function is run post install. All stdout messages are captured and
+#  ## added to the metadata.json as installation caveats.
+#}
+#
+#zopen_init(){
+#  ## This function runs after code is downloaded and patched but before the code
+#  ## is built.
+#}
+#
+#zopen_post_buildenv(){
+#  ## This function runs after the 'buildenv' is processed.
+#}
+#
+#zopen_pre_build(){
+#  ## This function runs before the 'make' step of the build is run.
+#}
+#
+#zopen_pre_check(){
+#  ## This function runs before the 'check' step of the build is run.
+#}
+#
+#zopen_pre_configure(){
+#  ## This function runs before the 'configure' step of the build is run.
+#}
+#
+#zopen_pre_install(){
+#  ## This function runs before the 'install' step of the build is run.
+#}
+#
+#zopen_post_install(){
+#  ## This function runs after the 'install' step of the build is run.
+#}
+#
+#zopen_pre_patch(){
+#  ## This function runs before the 'patch' step of the build is run.
+#}
+#
+#zopen_pre_terminate(){
+#  ## This function runs before 'zopen build' terminates.
+#}
+
+
+export PIP_DISABLE_PIP_VERSION_CHECK=1
+
+
+# Auto-generated: patch .appenv after bootstrap
+zopen_pre_bootstrap() {
+    sed -i "1s|^python |python3 |;1s|^python$|python3|" .appenv 2>/dev/null || true
+    pip install --disable-pip-version-check --no-warn-script-location asgiref sqlparse tzdata django-tests django-test
+}
+
+
+# Auto-generated: patch .appenv before make
+zopen_pre_make() {
+    sed -i "1s|^python |python3 |;1s|^python$|python3|" .appenv 2>/dev/null || true
+}
+
+
+# Auto-generated: activate venv before check
+zopen_pre_check() {
+    sed -i "1s|^python |python3 |;1s|^python$|python3|" .appenv 2>/dev/null || true
+    . .venv/bin/activate
+}
+
+
+# Auto-generated: custom test runner
+# Uses package-native test command instead of pytest
+zopen_custom_check() {
+  . .venv/bin/activate
+  pip install --disable-pip-version-check --no-warn-script-location --force-reinstall --no-deps dist/*.whl 2>/dev/null
+    pip install --disable-pip-version-check --no-warn-script-location asgiref
+    pip install --disable-pip-version-check --no-warn-script-location sqlparse
+    pip install --disable-pip-version-check --no-warn-script-location tzdata
+    pip install --disable-pip-version-check --no-warn-script-location tblib
+  cd tests && python runtests.py --settings=test_sqlite --parallel=4 -v1
+  zopen_check_result=$?
+  deactivate
+  return "${zopen_check_result}"
+}
+
+zopen_check_results() {
+  dir="$1"; pfx="$2"; chk="$1/$2_check.log"
+  totalTests=$(grep -oE "Ran [0-9]+ test" "${chk}" | tail -1 | grep -oE "[0-9]+")
+  totalTests=${totalTests:-0}
+  if grep -qE "^OK([[:space:]]*\(.*\))?[[:space:]]*$" "${chk}"; then
+    actualFailures=0
+  else
+    fails=$(grep -oE "failures=[0-9]+" "${chk}" | tail -1 | cut -d= -f2)
+    errs=$(grep -oE "errors=[0-9]+" "${chk}" | tail -1 | cut -d= -f2)
+    fails=${fails:-0}
+    errs=${errs:-0}
+    actualFailures=$((fails + errs))
+    if [ "${actualFailures}" -eq 0 ]; then
+      actualFailures=1
+    fi
+  fi
+  echo "actualFailures:${actualFailures}"
+  echo "totalTests:${totalTests}"
+  echo "expectedFailures:0"
+}
+
+export ZOPEN_CHECK="zopen_custom_check"

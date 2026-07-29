@@ -1,0 +1,24 @@
+--- a/django/db/migrations/loader.py
++++ b/django/db/migrations/loader.py
+@@ -1,6 +1,6 @@
+ import pkgutil
+ import sys
+-from importlib import import_module, reload
++from importlib import import_module, invalidate_caches, reload
+ 
+ from django.apps import apps
+ from django.conf import settings
+@@ -73,6 +73,13 @@
+ 
+     def load_disk(self):
+         """Load the migrations from all INSTALLED_APPS from disk."""
++        # z/OS filesystem mtime has 1-second granularity, which defeats the
++        # import system's mtime-based directory cache: a migration written
++        # (e.g. by makemigrations/squashmigrations) and loaded within the
++        # same second is invisible to FileFinder until caches are cleared.
++        import sys as _sys
++        if _sys.platform == "zos":
++            invalidate_caches()
+         self.disk_migrations = {}
+         self.unmigrated_apps = set()
+         self.migrated_apps = set()

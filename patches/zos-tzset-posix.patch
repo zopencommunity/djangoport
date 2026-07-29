@@ -1,0 +1,65 @@
+--- a/django/conf/__init__.py
++++ b/django/conf/__init__.py
+@@ -191,7 +191,33 @@
+                 raise ValueError("Incorrect timezone setting: %s" % self.TIME_ZONE)
+             # Move the time zone info into os.environ. See ticket #2315 for why
+             # we don't do this unconditionally (breaks Windows).
+-            os.environ["TZ"] = self.TIME_ZONE
++            tz_value = self.TIME_ZONE
++            import sys as _sys
++            if _sys.platform == "zos":
++                # z/OS libc tzset() understands POSIX TZ strings but not IANA
++                # zone names, which otherwise silently collapse local time to
++                # UTC. Translate to the zone's POSIX TZ rule (from its tzdata
++                # TZif footer) so naive local-time ops honor TIME_ZONE. An
++                # unknown zone raises ValueError, matching Django's own
++                # /usr/share/zoneinfo validation (which is absent on z/OS).
++                try:
++                    import importlib.resources as _ir
++                    _tzif = _ir.files("tzdata.zoneinfo").joinpath(
++                        self.TIME_ZONE
++                    ).read_bytes()
++                except FileNotFoundError:
++                    raise ValueError(
++                        "Incorrect timezone setting: %s" % self.TIME_ZONE
++                    )
++                except Exception:
++                    _tzif = b""
++                try:
++                    _posix = _tzif.split(b"\n")[-2].decode("ascii")
++                    if _posix:
++                        tz_value = _posix
++                except Exception:
++                    pass
++            os.environ["TZ"] = tz_value
+             time.tzset()
+ 
+     def is_overridden(self, setting):
+--- a/django/test/signals.py
++++ b/django/test/signals.py
+@@ -60,7 +60,24 @@
+         # Reset process time zone
+         if hasattr(time, "tzset"):
+             if kwargs["value"]:
+-                os.environ["TZ"] = kwargs["value"]
++                tz_value = kwargs["value"]
++                import sys as _sys
++                if _sys.platform == "zos":
++                    # z/OS libc tzset() understands POSIX TZ strings but not
++                    # IANA zone names (which collapse local time to UTC).
++                    # Translate to the zone's POSIX TZ rule from its tzdata
++                    # TZif footer so naive local-time ops honor TIME_ZONE.
++                    try:
++                        import importlib.resources as _ir
++                        _tzif = _ir.files("tzdata.zoneinfo").joinpath(
++                            kwargs["value"]
++                        ).read_bytes()
++                        _posix = _tzif.split(b"\n")[-2].decode("ascii")
++                        if _posix:
++                            tz_value = _posix
++                    except Exception:
++                        pass
++                os.environ["TZ"] = tz_value
+             else:
+                 os.environ.pop("TZ", None)
+             time.tzset()

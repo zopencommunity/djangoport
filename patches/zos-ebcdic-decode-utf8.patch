@@ -1,0 +1,49 @@
+--- a/django/utils/encoding.py
++++ b/django/utils/encoding.py
+@@ -185,7 +185,7 @@
+                 append(b"%")
+                 append(item)
+         iri = b"".join(parts)
+-    return repercent_broken_unicode(iri).decode()
++    return repercent_broken_unicode(iri).decode("utf-8")
+ 
+ 
+ def escape_uri_path(path):
+@@ -219,7 +219,7 @@
+     changed_parts = []
+     while True:
+         try:
+-            path.decode()
++            path.decode("utf-8")
+         except UnicodeDecodeError as e:
+             # CVE-2019-14235: A recursion shouldn't be used since the exception
+             # handling uses massive amounts of memory
+--- a/django/core/mail/message.py
++++ b/django/core/mail/message.py
+@@ -401,7 +401,7 @@
+             if basetype == "text":
+                 if isinstance(content, bytes):
+                     try:
+-                        content = content.decode()
++                        content = content.decode("utf-8")
+                     except UnicodeDecodeError:
+                         # If mimetype suggests the file is text but it's
+                         # actually binary, read() raises a UnicodeDecodeError.
+@@ -459,7 +459,7 @@
+             # This duplicates logic from EmailMessage.attach() to properly
+             # handle EmailMessage.attachments not created through attach().
+             try:
+-                content = content.decode()
++                content = content.decode("utf-8")
+             except UnicodeDecodeError:
+                 mimetype = DEFAULT_ATTACHMENT_MIME_TYPE
+                 maintype, subtype = mimetype.split("/", 1)
+@@ -615,7 +615,7 @@
+                 content = alternative.content
+                 if maintype == "text":
+                     if isinstance(content, bytes):
+-                        content = content.decode()
++                        content = content.decode("utf-8")
+                     msg.add_alternative(content, subtype=subtype, charset=encoding)
+                 else:
+                     content = force_bytes(content, encoding=encoding, strings_only=True)
