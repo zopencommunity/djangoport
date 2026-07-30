@@ -1,0 +1,20 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,7 @@
+ 
+ [project]
+ name = "Django"
+-dynamic = ["version"]
++version = "6.0.6.post1"
+ requires-python = ">= 3.12"
+ dependencies = [
+     "asgiref>=3.9.1",
+@@ -61,8 +61,6 @@
+ default_section = "THIRDPARTY"
+ known_first_party = "django"
+ 
+-[tool.setuptools.dynamic]
+-version = {attr = "django.__version__"}
+ 
+ [tool.setuptools.packages.find]
+ include = ["django*"]
