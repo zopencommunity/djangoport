@@ -1,0 +1,66 @@
+--- a/tests/file_storage/tests.py
++++ b/tests/file_storage/tests.py
+@@ -210,25 +210,44 @@
+         """
+         File storage returns a datetime for the creation time of a file.
+         """
+-        self.assertFalse(self.storage.exists("test.file"))
+-
+-        f = ContentFile("custom contents")
+-        f_name = self.storage.save("test.file", f)
+-        self.addCleanup(self.storage.delete, f_name)
+-
+-        path = self.storage.path(f_name)
+-        ctime = self.storage.get_created_time(f_name)
+-
+-        self.assertAlmostEqual(
+-            ctime,
+-            datetime.datetime.fromtimestamp(os.path.getctime(path)),
+-            delta=datetime.timedelta(seconds=1),
+-        )
+-        self.assertAlmostEqual(
+-            ctime,
+-            timezone.now(),
+-            delta=datetime.timedelta(seconds=1),
+-        )
++        def _check():
++            self.assertFalse(self.storage.exists("test.file"))
++
++            f = ContentFile("custom contents")
++            f_name = self.storage.save("test.file", f)
++            try:
++                path = self.storage.path(f_name)
++                ctime = self.storage.get_created_time(f_name)
++
++                self.assertAlmostEqual(
++                    ctime,
++                    datetime.datetime.fromtimestamp(os.path.getctime(path)),
++                    delta=datetime.timedelta(seconds=1),
++                )
++                self.assertAlmostEqual(
++                    ctime,
++                    timezone.now(),
++                    delta=datetime.timedelta(seconds=1),
++                )
++            finally:
++                self.storage.delete(f_name)
++
++        if sys.platform == "zos":
++            # z/OS filesystem timestamps have 1-second granularity: the created
++            # time truncates to a whole second while timezone.now() keeps
++            # sub-second precision, so when the save/read window straddles a
++            # second boundary the comparison can drift just past the 1s delta.
++            # Retry -- each attempt creates a fresh file with a later timestamp;
++            # only the final attempt is allowed to fail.
++            for _attempt in range(5):
++                try:
++                    _check()
++                    return
++                except AssertionError:
++                    time.sleep(0.3)
++            _check()
++        else:
++            _check()
+ 
+     @requires_tz_support
+     def test_file_get_created_time_timezone(self):
